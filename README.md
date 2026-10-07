@@ -31,6 +31,54 @@
 $ npm install
 ```
 
+## Authentication tokens
+
+Set `JWT_SECRET`, `JWT_REFRESH_SECRET`, and `FRONTEND_ORIGINS` in the
+environment. Use different, high-entropy values for the token secrets.
+`FRONTEND_ORIGINS` is a comma-separated list of allowed browser origins; it
+defaults to `http://localhost:5173`. The access token is returned as
+`access_token` in the JSON response and expires after one hour. The refresh
+token is sent as an HttpOnly `refresh_token` cookie and expires after seven
+days. In production, use HTTPS and set `NODE_ENV=production` so the cookie is
+sent with `Secure` and `SameSite=None`.
+
+Registration (`POST /auth/signup`) and sign-in (`POST /auth/signin`) issue both
+tokens. Use `POST /auth/refresh` with cookies enabled to obtain a new access
+token. `POST /auth/logout` clears the refresh cookie.
+
+For browser requests, include credentials so the browser can receive and send
+the HttpOnly cookie:
+
+```js
+const response = await fetch('http://localhost:3000/auth/signin', {
+  method: 'POST',
+  credentials: 'include',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email, password }),
+});
+
+const { access_token } = await response.json();
+```
+
+Keep the access token in application memory and send it as a Bearer token for
+protected API requests. Refresh tokens are not returned in JSON and cannot be
+read directly by browser JavaScript.
+
+Refresh tokens are stateless JWTs: refreshing issues a new access token but
+does not rotate or revoke the refresh token. Logout clears the browser cookie;
+a previously copied refresh token remains valid until it expires.
+
+When the access token expires, request a replacement using the refresh cookie:
+
+```js
+const response = await fetch('http://localhost:3000/auth/refresh', {
+  method: 'POST',
+  credentials: 'include',
+});
+
+const { access_token } = await response.json();
+```
+
 ## Compile and run the project
 
 ```bash
