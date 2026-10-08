@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
+import { isUUID } from 'class-validator';
 import { UsersService } from '#src/users/users.service.js';
 import { User } from '#src/users/entities/user.entity.js';
 
@@ -19,20 +20,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(jwtPayload: {
-    sub: number | string;
+    sub: string;
     tokenType?: string;
   }): Promise<User> {
     if (jwtPayload.tokenType && jwtPayload.tokenType !== 'access') {
       throw new UnauthorizedException('Некорректный JWT');
     }
 
-    const userId = Number(jwtPayload.sub);
-
-    if (!Number.isInteger(userId)) {
+    if (!isUUID(jwtPayload.sub)) {
       throw new UnauthorizedException('Некорректный JWT');
     }
 
-    const user = await this.usersService.findUserById(userId);
+    const user = await this.usersService.findUserById(jwtPayload.sub);
 
     if (!user) {
       throw new UnauthorizedException('Пользователь не найден');

@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import { isUUID } from 'class-validator';
 import { Profile } from 'passport-yandex';
 import { User } from '../users/entities/user.entity.js';
 import { UsersService } from '../users/users.service.js';
@@ -10,7 +11,7 @@ import { ACCESS_TOKEN_TTL, REFRESH_TOKEN_TTL } from './auth.constants.js';
 export type AuthenticatedUser = Pick<User, 'id'>;
 
 type TokenPayload = {
-  sub: number;
+  sub: string;
   tokenType: 'access' | 'refresh';
 };
 
@@ -22,7 +23,7 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  async createTokenPair(id: number): Promise<{
+  async createTokenPair(id: string): Promise<{
     accessToken: string;
     refreshToken: string;
   }> {
@@ -73,8 +74,8 @@ export class AuthService {
 
     if (
       tokenType !== 'refresh' ||
-      typeof sub !== 'number' ||
-      !Number.isSafeInteger(sub)
+      typeof sub !== 'string' ||
+      !isUUID(sub)
     ) {
       throw new UnauthorizedException('Недействительный refresh-токен');
     }

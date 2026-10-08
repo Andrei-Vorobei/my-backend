@@ -37,53 +37,67 @@ describe('AuthService', () => {
   });
 
   it('creates an access token and a refresh token for the user', async () => {
+    const userId = 'ad27d56a-70c3-4ae4-bc6d-3b9da7b98b49';
     jwtService.signAsync
       .mockResolvedValueOnce('access-token')
       .mockResolvedValueOnce('refresh-token');
 
-    await expect(service.createTokenPair(42)).resolves.toEqual({
+    await expect(service.createTokenPair(userId)).resolves.toEqual({
       accessToken: 'access-token',
       refreshToken: 'refresh-token',
     });
 
     expect(jwtService.signAsync).toHaveBeenNthCalledWith(
       1,
-      { sub: 42, tokenType: 'access' },
+      { sub: userId, tokenType: 'access' },
       { expiresIn: '1h' },
     );
     expect(jwtService.signAsync).toHaveBeenNthCalledWith(
       2,
-      { sub: 42, tokenType: 'refresh' },
+      { sub: userId, tokenType: 'refresh' },
       { secret: 'refresh-secret', expiresIn: '7d' },
     );
   });
 
   it('issues a new access token from a valid refresh token', async () => {
+    const userId = 'ad27d56a-70c3-4ae4-bc6d-3b9da7b98b49';
     jwtService.verifyAsync.mockResolvedValue({
-      sub: 42,
+      sub: userId,
       tokenType: 'refresh',
     });
-    usersService.findUserById.mockResolvedValue({ id: 42 });
+    usersService.findUserById.mockResolvedValue({ id: userId });
     jwtService.signAsync.mockResolvedValue('new-access-token');
 
     await expect(
       service.refreshAccessToken('refresh-token'),
     ).resolves.toBe('new-access-token');
-    expect(usersService.findUserById).toHaveBeenCalledWith(42);
+    expect(usersService.findUserById).toHaveBeenCalledWith(userId);
     expect(jwtService.signAsync).toHaveBeenCalledWith(
-      { sub: 42, tokenType: 'access' },
+      { sub: userId, tokenType: 'access' },
       { expiresIn: '1h' },
     );
   });
 
   it('rejects an access token used as a refresh token', async () => {
     jwtService.verifyAsync.mockResolvedValue({
-      sub: 42,
+      sub: 'ad27d56a-70c3-4ae4-bc6d-3b9da7b98b49',
       tokenType: 'access',
     });
 
     await expect(
       service.refreshAccessToken('access-token'),
+    ).rejects.toThrow('Недействительный refresh-токен');
+    expect(usersService.findUserById).not.toHaveBeenCalled();
+  });
+
+  it('rejects a refresh token with a non-UUID subject', async () => {
+    jwtService.verifyAsync.mockResolvedValue({
+      sub: '42',
+      tokenType: 'refresh',
+    });
+
+    await expect(
+      service.refreshAccessToken('refresh-token'),
     ).rejects.toThrow('Недействительный refresh-токен');
     expect(usersService.findUserById).not.toHaveBeenCalled();
   });

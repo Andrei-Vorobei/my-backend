@@ -16,6 +16,7 @@ import { isEmail } from 'class-validator';
 import * as bcrypt from 'bcrypt';
 import { Profile } from 'passport-yandex';
 import { User } from './entities/user.entity.js';
+import { UserRole } from './entities/user-role.enum.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 
@@ -31,7 +32,7 @@ export class UsersService {
     return this.userRepository.findOneBy(filter);
   }
 
-  async findUserById(id: number) {
+  async findUserById(id: string) {
     return this.userRepository.findOneBy({ id });
   }
 
@@ -55,13 +56,14 @@ export class UsersService {
   async createUser(dto: CreateUserDto): Promise<User> {
     const user = this.userRepository.create({
       ...dto,
+      roles: [UserRole.USER],
       password: await bcrypt.hash(dto.password, 10),
     });
 
     return this.userRepository.save(user);
   }
 
-  async updateUser(id: number, dto: UpdateUserDto): Promise<UpdateResult> {
+  async updateUser(id: string, dto: UpdateUserDto): Promise<UpdateResult> {
     const updateData: UpdateUserDto = { ...dto };
 
     // Пароль из PATCH /users/me никогда не должен попасть в БД открытым текстом.
@@ -87,7 +89,7 @@ export class UsersService {
     }
   }
 
-  async removeUser(id: number): Promise<DeleteResult> {
+  async removeUser(id: string): Promise<DeleteResult> {
     return this.userRepository.delete({ id });
   }
 
@@ -119,6 +121,7 @@ export class UsersService {
             yandexId: id,
             username: displayName || `yandex_user_${id}`,
             email,
+            roles: [UserRole.USER],
             password: await bcrypt.hash(`yandex:${id}`, 10),
           }),
         );

@@ -6,11 +6,12 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
+import { UserRole } from './user-role.enum.js';
 
 @Entity('users')
 export class User {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({
     type: 'varchar',
@@ -23,6 +24,15 @@ export class User {
 
   @Column({ unique: true })
   username: string;
+
+  @Column({
+    type: 'enum',
+    enum: UserRole,
+    enumName: 'users_roles_enum',
+    array: true,
+    default: [UserRole.USER],
+  })
+  roles: UserRole[];
 
   @Column({ length: 200, default: 'Пока ничего не рассказал о себе' })
   about: string;

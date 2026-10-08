@@ -44,6 +44,7 @@ import { AppService } from './app.service.js';
 
         return {
           type: 'postgres' as const,
+          uuidExtension: 'pgcrypto' as const,
           host: configService.getOrThrow<string>('DB_HOST'),
           port,
           username: configService.getOrThrow<string>('DB_USERNAME'),

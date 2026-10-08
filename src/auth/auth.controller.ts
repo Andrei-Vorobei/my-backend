@@ -2,6 +2,7 @@ import {
   Body,
   ConflictException,
   Controller,
+  NotFoundException,
   Post,
   Req,
   Res,
@@ -36,7 +37,16 @@ export class AuthController {
     const tokens = await this.authService.createTokenPair(req.user.id);
     setRefreshCookie(response, tokens.refreshToken, this.configService);
 
-    return { access_token: tokens.accessToken };
+    const user = await this.usersService.findUserById(req.user.id);
+
+    if (!user) {
+      throw new NotFoundException('Пользователь не найден');
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, yandexId, ...profile } = user;
+
+    return { ...profile, access_token: tokens.accessToken };
   }
 
   @Post('refresh')

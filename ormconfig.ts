@@ -19,6 +19,7 @@ const getRequiredEnv = (name: string): string => {
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
+  uuidExtension: 'pgcrypto',
   host: getRequiredEnv('DB_HOST'),
   port,
   username: getRequiredEnv('DB_USERNAME'),
